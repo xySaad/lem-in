@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -9,32 +10,39 @@ import (
 
 const (
 	// states
-	antsNumber = 1 << iota
+	antsNumber = iota
 	start
-	coords
+	roomsList
 	end
 	links
 	// tokens
-	room
+	roomCharacter
+	x
+	y
 	space
 	dash    = '-'
 	hashtag = '#'
 )
 
 type state struct {
-	prevToken, expectedToken int
-	currentState             int
+	prevToken, expectedToken, prevState, expectedState, linePosition int
 }
 
 type antFarm struct {
-	state        *state
-	currentChunk []byte
+	rooms       map[string]*room
+	state       *state
+	currentLine string
+}
+
+type room struct {
+	x, y int
 }
 
 func initFarm() antFarm {
 	return antFarm{
+		rooms: map[string]*room{},
 		state: &state{
-			currentState: antsNumber,
+			expectedState: antsNumber,
 		},
 	}
 }
@@ -57,7 +65,17 @@ func ParseFile(filename string) error {
 		}
 
 		if buff[0] == '\n' {
-			err = af.parseLine(line)
+			af.currentLine = string(line)
+			af.state.linePosition++
+
+			if len(line) == 0 {
+				return af.ParsingError("invalid empty line", 0)
+			}
+			if line[0] == '#' && string(line) != "##end" && string(line) != "##start" {
+				line = nil
+				continue
+			}
+			err = af.parseLine()
 			if err != nil {
 				return err
 			}
@@ -70,65 +88,102 @@ func ParseFile(filename string) error {
 			break
 		}
 	}
-
+	for nm, rm := range af.rooms {
+		fmt.Println(nm, rm)
+	}
 	return nil
 }
 
-func (af *antFarm) parseLine(line []byte) error {
-	lineStr := string(line)
-	switch af.state.currentState {
+func (af *antFarm) parseLine() error {
+	lineStr := af.currentLine
+	switch af.state.expectedState {
 	case antsNumber:
 		n, err := strconv.Atoi(lineStr)
-		if n <= 0 {
-			return errors.New("invalid ant number: " + lineStr)
+		if err != nil || n <= 0 {
+			return errors.New("invalid ants number")
 		}
-		if err != nil {
-			return errors.New("invalid ant number: " + lineStr)
-		}
-		af.state.currentState = start
+		af.state.prevState = antsNumber
+		af.state.expectedState = start
 	case start:
-		if lineStr == "##start" {
-			af.state.currentState = coords
-			af.state.expectedToken = room
-		} else {
-			return errors.New("expected ##start found " + lineStr)
+		if lineStr != "##start" {
+			return af.ParsingError("no starting room")
 		}
-	case coords:
-		if lineStr == "##end" {
-			if af.state.prevToken == room {
-				return errors.New("[lem-in] invalid format: no start room")
-			}
-			af.state.currentState = links
-			return nil
+		af.state.prevState = start
+		af.state.expectedState = roomsList
+	case roomsList:
+		if af.state.prevState == start && lineStr == "" {
+			return af.ParsingError("invalid new line", 0)
 		}
-		var sections int
-		for _, char := range lineStr {
-			switch af.state.expectedToken {
-			case room:
-				if char != 'L' && char != '#' {
-					af.state.expectedToken = room | space
-					af.state.prevToken = room
-				} else {
-					return errors.New("expected coordinate found: " + lineStr)
-				}
-			case room | space:
-				if char == ' ' && af.state.prevToken != space {
-					sections++
-					if sections > 2 {
-						return errors.New("expected new line found: " + lineStr)
-					}
-					af.state.currentState = room
-					af.state.prevToken = space
-					continue
-				} else if char >= '0' && char <= '9' {
-					af.state.expectedToken = space | room
-					af.state.prevToken = room
-				} else if sections > 0 {
-					return errors.New("expected coordinate found: " + lineStr)
-				}
+		if af.state.prevState != roomsList {
+			if lineStr == "##end" {
+				return af.ParsingError("no rooms provided")
 			}
 		}
-		af.state.currentState = coords
+		af.state.prevState = roomsList
+		af.state.expectedToken = roomCharacter
+		return af.checkCoords()
 	}
 	return nil
+}
+
+func (af *antFarm) checkCoords() error {
+	roomName := []rune{}
+	for i, char := range af.currentLine {
+		switch af.state.expectedToken {
+		case roomCharacter:
+			if char == ' ' {
+				_, exist := af.rooms[string(roomName)]
+				if exist {
+					return af.ParsingError("duplicated room", 0)
+				}
+				af.rooms[string(roomName)] = &room{}
+				af.state.prevToken = space
+				af.state.expectedToken = x
+				continue
+			}
+			roomName = append(roomName, char)
+		case x:
+			if char == ' ' {
+				if af.state.prevToken == space {
+					return af.ParsingError("invalid space after", i)
+				}
+				af.state.prevToken = space
+				af.state.expectedToken = y
+
+				continue
+			}
+			if char >= '0' && char <= '9' {
+				af.rooms[string(roomName)].x = af.rooms[string(roomName)].x*10 + int(char-'0')
+				af.state.prevToken = x
+			} else {
+				return af.ParsingError("invalid x value", i)
+			}
+		case y:
+			if char == ' ' {
+				if af.state.prevToken == space || i < len(af.currentLine) {
+					return af.ParsingError("invalid space after", i)
+				}
+				af.state.prevToken = space
+				af.state.expectedToken = roomCharacter
+				continue
+			}
+			if char >= '0' && char <= '9' {
+				af.rooms[string(roomName)].y = af.rooms[string(roomName)].y*10 + int(char-'0')
+				af.state.prevToken = y
+			} else {
+				return af.ParsingError("invalid y value", i)
+			}
+		}
+	}
+	return nil
+}
+
+func (af *antFarm) ParsingError(err string, i ...int) error {
+	if len(i) == 1 {
+		index := i[0]
+		//TODO: show the word where the error is
+		err += fmt.Sprint(": ", "\""+af.currentLine+"\" at ", af.state.linePosition, ":", index)
+	}
+
+	return errors.New(err)
 }
