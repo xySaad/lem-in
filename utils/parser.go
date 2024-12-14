@@ -76,11 +76,17 @@ func ParseFile(filename string) error {
 			}
 			if line[0] == '#' {
 				if string(line) == "##start" {
+					if af.startRoom != "" || af.state.prevState == start {
+						return af.ParsingError("duplicated start room")
+					}
 					af.state.prevState = start
 					af.state.expectedState = roomsList
 					af.state.expectedToken = roomCharacter
 				}
 				if string(line) == "##end" {
+					if af.endRoom != "" || af.state.prevState == end {
+						return af.ParsingError("duplicated end room")
+					}
 					if af.state.prevState == start {
 						return af.ParsingError("no start room provided")
 					}
