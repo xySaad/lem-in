@@ -29,6 +29,7 @@ type state struct {
 }
 
 type antFarm struct {
+	xyPairs     map[int]struct{}
 	rooms       map[string]*room
 	state       *state
 	currentLine string
@@ -40,7 +41,8 @@ type room struct {
 
 func initFarm() antFarm {
 	return antFarm{
-		rooms: map[string]*room{},
+		xyPairs: map[int]struct{}{},
+		rooms:   map[string]*room{},
 		state: &state{
 			expectedState: antsNumber,
 		},
@@ -48,8 +50,6 @@ func initFarm() antFarm {
 }
 
 func ParseFile(filename string) error {
-	af := initFarm()
-
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -103,7 +103,7 @@ func (af *antFarm) parseLine() error {
 			return errors.New("invalid ants number")
 		}
 		af.state.prevState = antsNumber
-		af.state.expectedState = start
+		af.state.expectedState = roomsList
 	case start:
 		if lineStr != "##start" {
 			return af.ParsingError("no starting room")
@@ -131,6 +131,9 @@ func (af *antFarm) checkCoords() error {
 	for i, char := range af.currentLine {
 		switch af.state.expectedToken {
 		case roomCharacter:
+			if af.state.prevToken == space {
+				return af.ParsingError("missing y coordinates", i)
+			}
 			if char == ' ' {
 				_, exist := af.rooms[string(roomName)]
 				if exist {
@@ -173,6 +176,27 @@ func (af *antFarm) checkCoords() error {
 			} else {
 				return af.ParsingError("invalid y value", i)
 			}
+		}
+	}
+	if af.state.prevToken == y {
+		room, alo := af.rooms[string(roomName)]
+		if !alo {
+			fmt.Println(string(roomName))
+		}
+		if room.x < room.y {
+			uniquePair := room.y*room.y + room.x
+			_, exists := af.xyPairs[uniquePair]
+			if exists {
+				return af.ParsingError("invalid coordinates", 0)
+			}
+			af.xyPairs[uniquePair] = struct{}{}
+		} else {
+			uniquePair := room.x*room.x + room.x + room.y
+			_, exists := af.xyPairs[uniquePair]
+			if exists {
+				return af.ParsingError("invalid coordinates", 0)
+			}
+			af.xyPairs[uniquePair] = struct{}{}
 		}
 	}
 	return nil
