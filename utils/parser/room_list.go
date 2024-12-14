@@ -1,8 +1,7 @@
 package parser
 
 func (af *antFarm) parseRoomList() error {
-	roomName := []rune{}
-	roomStr := ""
+	spaceIndex := 0
 	for i, char := range af.currentLine {
 		switch af.state.expectedToken {
 		case roomCharacter:
@@ -10,20 +9,20 @@ func (af *antFarm) parseRoomList() error {
 				return af.ParsingError("missing y coordinates", i)
 			}
 			if char == ' ' {
-				roomStr = string(roomName)
-				_, exist := af.rooms[roomStr]
+				spaceIndex = i
+				_, exist := af.rooms[af.currentLine[:i]]
 				if exist {
 					return af.ParsingError("duplicated room", 0)
 				}
-				af.rooms[roomStr] = &room{
+				af.rooms[af.currentLine[:i]] = &room{
 					x: -1,
 					y: -1,
 				}
 				if af.state.prevState == start {
-					af.startRoom = roomStr
+					af.startRoom = af.currentLine[:i]
 				}
 				if af.state.prevState == end {
-					af.endRoom = roomStr
+					af.endRoom = af.currentLine[:i]
 				}
 				af.state.prevToken = space
 				af.state.expectedToken = x
@@ -37,7 +36,6 @@ func (af *antFarm) parseRoomList() error {
 				af.state.expectedState = links
 				return nil
 			}
-			roomName = append(roomName, char)
 		case x:
 			if char == ' ' {
 				if af.state.prevToken == space {
@@ -49,7 +47,7 @@ func (af *antFarm) parseRoomList() error {
 				continue
 			}
 			if char >= '0' && char <= '9' {
-				af.rooms[roomStr].x = af.rooms[roomStr].x*10 + int(char-'0')
+				af.rooms[af.currentLine[:spaceIndex]].x = af.rooms[af.currentLine[:spaceIndex]].x*10 + int(char-'0')
 				af.state.prevToken = x
 			} else {
 				return af.ParsingError("invalid x value", i)
@@ -64,7 +62,7 @@ func (af *antFarm) parseRoomList() error {
 				continue
 			}
 			if char >= '0' && char <= '9' {
-				af.rooms[roomStr].y = af.rooms[roomStr].y*10 + int(char-'0')
+				af.rooms[af.currentLine[:spaceIndex]].y = af.rooms[af.currentLine[:spaceIndex]].y*10 + int(char-'0')
 				af.state.prevToken = y
 			} else {
 				return af.ParsingError("invalid y value", i)
@@ -72,7 +70,7 @@ func (af *antFarm) parseRoomList() error {
 		}
 	}
 	if af.state.prevToken == y {
-		room, alo := af.rooms[roomStr]
+		room, alo := af.rooms[af.currentLine[:spaceIndex]]
 		if !alo {
 			return af.ParsingError("invalid format", 0)
 		}
@@ -92,7 +90,7 @@ func (af *antFarm) parseRoomList() error {
 			af.xyPairs[uniquePair] = struct{}{}
 		}
 	}
-	if roomStr == "" && af.state.expectedToken == roomCharacter {
+	if af.currentLine[:spaceIndex] == "" && af.state.expectedToken == roomCharacter {
 		return af.ParsingError("invalid format", 0)
 	}
 	return nil
