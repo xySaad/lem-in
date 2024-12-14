@@ -10,17 +10,17 @@ import (
 
 const (
 	// states
-	antsNumber = iota
-	start
+	start = iota
 	roomsList
 	end
 	links
 	// tokens
+	antsNumber
 	roomCharacter
 	x
 	y
 	space
-	dash    = '-'
+	dash
 	hashtag = '#'
 )
 
@@ -29,6 +29,7 @@ type state struct {
 }
 
 type antFarm struct {
+	number             int
 	xyPairs            map[int]struct{}
 	rooms              map[string]*room
 	startRoom, endRoom string
@@ -66,11 +67,18 @@ func ParseFile(filename string) error {
 		if err != nil && err != io.EOF {
 			return err
 		}
-
 		if buff[0] == '\n' {
 			af.currentLine = string(line)
 			af.state.linePosition++
-
+			if af.state.linePosition == 1 {
+				n, err := strconv.Atoi(af.currentLine)
+				if err != nil || n <= 0 {
+					return errors.New("invalid ants number")
+				}
+				af.number = n
+				af.state.prevToken = antsNumber
+				af.state.expectedState = roomsList
+			}
 			if len(line) == 0 {
 				return af.ParsingError("invalid empty line", 0)
 			}
@@ -87,9 +95,7 @@ func ParseFile(filename string) error {
 					if af.endRoom != "" || af.state.prevState == end {
 						return af.ParsingError("duplicated end room")
 					}
-					if af.state.prevState == start {
-						return af.ParsingError("no start room provided")
-					}
+
 					af.state.expectedState = roomsList
 					af.state.expectedToken = roomCharacter
 					af.state.prevState = end
@@ -114,15 +120,7 @@ func ParseFile(filename string) error {
 }
 
 func (af *antFarm) parseLine() error {
-	lineStr := af.currentLine
 	switch af.state.expectedState {
-	case antsNumber:
-		n, err := strconv.Atoi(lineStr)
-		if err != nil || n <= 0 {
-			return errors.New("invalid ants number")
-		}
-		af.state.prevState = antsNumber
-		af.state.expectedState = roomsList
 	case roomsList:
 		defer func() {
 			af.state.prevState = roomsList
@@ -148,7 +146,10 @@ func (af *antFarm) checkCoords() error {
 				if exist {
 					return af.ParsingError("duplicated room", 0)
 				}
-				af.rooms[roomStr] = &room{}
+				af.rooms[roomStr] = &room{
+					x: -1,
+					y: -1,
+				}
 				if af.state.prevState == start {
 					af.startRoom = roomStr
 				}
@@ -160,6 +161,9 @@ func (af *antFarm) checkCoords() error {
 				continue
 			}
 			if char == '-' {
+				if af.startRoom == "" {
+					return af.ParsingError("no start room")
+				}
 				af.state.prevToken = dash
 				af.state.prevState = roomsList
 				af.state.expectedState = links
@@ -202,7 +206,7 @@ func (af *antFarm) checkCoords() error {
 	if af.state.prevToken == y {
 		room, alo := af.rooms[roomStr]
 		if !alo {
-			fmt.Println(roomStr)
+			return af.ParsingError("invalid format", 0)
 		}
 		if room.x < room.y {
 			uniquePair := room.y*room.y + room.x
@@ -219,6 +223,9 @@ func (af *antFarm) checkCoords() error {
 			}
 			af.xyPairs[uniquePair] = struct{}{}
 		}
+	}
+	if roomStr == "" && af.state.expectedToken == roomCharacter {
+		return af.ParsingError("invalid format", 0)
 	}
 	return nil
 }
