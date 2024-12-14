@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"lem-in/utils"
+	"lem-in/utils/parser"
 	"os"
 )
 
@@ -17,7 +17,7 @@ func main() {
 		fmt.Println("usage: go run . <filename.txt>")
 		return
 	}
-	err := utils.ParseFile(os.Args[1])
+	err := parser.ParseFile(os.Args[1])
 	if err != nil {
 		fmt.Println(err)
 		return
