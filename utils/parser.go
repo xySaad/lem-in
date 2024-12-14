@@ -50,6 +50,8 @@ func initFarm() antFarm {
 }
 
 func ParseFile(filename string) error {
+	af := initFarm()
+
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
