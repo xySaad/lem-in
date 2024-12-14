@@ -29,10 +29,11 @@ type state struct {
 }
 
 type antFarm struct {
-	xyPairs     map[int]struct{}
-	rooms       map[string]*room
-	state       *state
-	currentLine string
+	xyPairs            map[int]struct{}
+	rooms              map[string]*room
+	startRoom, endRoom string
+	state              *state
+	currentLine        string
 }
 
 type room struct {
@@ -73,7 +74,20 @@ func ParseFile(filename string) error {
 			if len(line) == 0 {
 				return af.ParsingError("invalid empty line", 0)
 			}
-			if line[0] == '#' && string(line) != "##end" && string(line) != "##start" {
+			if line[0] == '#' {
+				if string(line) == "##start" {
+					af.state.prevState = start
+					af.state.expectedState = roomsList
+					af.state.expectedToken = roomCharacter
+				}
+				if string(line) == "##end" {
+					if af.state.prevState == start {
+						return af.ParsingError("no start room provided")
+					}
+					af.state.expectedState = roomsList
+					af.state.expectedToken = roomCharacter
+					af.state.prevState = end
+				}
 				line = nil
 				continue
 			}
@@ -90,9 +104,6 @@ func ParseFile(filename string) error {
 			break
 		}
 	}
-	for nm, rm := range af.rooms {
-		fmt.Println(nm, rm)
-	}
 	return nil
 }
 
@@ -106,23 +117,11 @@ func (af *antFarm) parseLine() error {
 		}
 		af.state.prevState = antsNumber
 		af.state.expectedState = roomsList
-	case start:
-		if lineStr != "##start" {
-			return af.ParsingError("no starting room")
-		}
-		af.state.prevState = start
-		af.state.expectedState = roomsList
 	case roomsList:
-		if af.state.prevState == start && lineStr == "" {
-			return af.ParsingError("invalid new line", 0)
-		}
-		if af.state.prevState != roomsList {
-			if lineStr == "##end" {
-				return af.ParsingError("no rooms provided")
-			}
-		}
-		af.state.prevState = roomsList
-		af.state.expectedToken = roomCharacter
+		defer func() {
+			af.state.prevState = roomsList
+			af.state.expectedToken = roomCharacter
+		}()
 		return af.checkCoords()
 	}
 	return nil
@@ -130,6 +129,7 @@ func (af *antFarm) parseLine() error {
 
 func (af *antFarm) checkCoords() error {
 	roomName := []rune{}
+	roomStr := ""
 	for i, char := range af.currentLine {
 		switch af.state.expectedToken {
 		case roomCharacter:
@@ -137,13 +137,26 @@ func (af *antFarm) checkCoords() error {
 				return af.ParsingError("missing y coordinates", i)
 			}
 			if char == ' ' {
-				_, exist := af.rooms[string(roomName)]
+				roomStr = string(roomName)
+				_, exist := af.rooms[roomStr]
 				if exist {
 					return af.ParsingError("duplicated room", 0)
 				}
-				af.rooms[string(roomName)] = &room{}
+				af.rooms[roomStr] = &room{}
+				if af.state.prevState == start {
+					af.startRoom = roomStr
+				}
+				if af.state.prevState == end {
+					af.endRoom = roomStr
+				}
 				af.state.prevToken = space
 				af.state.expectedToken = x
+				continue
+			}
+			if char == '-' {
+				af.state.prevToken = dash
+				af.state.prevState = roomsList
+				af.state.expectedState = links
 				continue
 			}
 			roomName = append(roomName, char)
@@ -158,7 +171,7 @@ func (af *antFarm) checkCoords() error {
 				continue
 			}
 			if char >= '0' && char <= '9' {
-				af.rooms[string(roomName)].x = af.rooms[string(roomName)].x*10 + int(char-'0')
+				af.rooms[roomStr].x = af.rooms[roomStr].x*10 + int(char-'0')
 				af.state.prevToken = x
 			} else {
 				return af.ParsingError("invalid x value", i)
@@ -173,7 +186,7 @@ func (af *antFarm) checkCoords() error {
 				continue
 			}
 			if char >= '0' && char <= '9' {
-				af.rooms[string(roomName)].y = af.rooms[string(roomName)].y*10 + int(char-'0')
+				af.rooms[roomStr].y = af.rooms[roomStr].y*10 + int(char-'0')
 				af.state.prevToken = y
 			} else {
 				return af.ParsingError("invalid y value", i)
@@ -181,22 +194,22 @@ func (af *antFarm) checkCoords() error {
 		}
 	}
 	if af.state.prevToken == y {
-		room, alo := af.rooms[string(roomName)]
+		room, alo := af.rooms[roomStr]
 		if !alo {
-			fmt.Println(string(roomName))
+			fmt.Println(roomStr)
 		}
 		if room.x < room.y {
 			uniquePair := room.y*room.y + room.x
 			_, exists := af.xyPairs[uniquePair]
 			if exists {
-				return af.ParsingError("invalid coordinates", 0)
+				return af.ParsingError("duplicated coordinates", 0)
 			}
 			af.xyPairs[uniquePair] = struct{}{}
 		} else {
 			uniquePair := room.x*room.x + room.x + room.y
 			_, exists := af.xyPairs[uniquePair]
 			if exists {
-				return af.ParsingError("invalid coordinates", 0)
+				return af.ParsingError("duplicated coordinates", 0)
 			}
 			af.xyPairs[uniquePair] = struct{}{}
 		}
