@@ -9,7 +9,6 @@ const (
 	// tokens
 	antsNumber
 	roomCharacter
-	linkedRoom
 	x
 	y
 	space
@@ -31,6 +30,7 @@ type antFarm struct {
 }
 
 type room struct {
+	links []string
 	x, y int
 }
 

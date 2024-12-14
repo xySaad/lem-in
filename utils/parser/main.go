@@ -73,6 +73,7 @@ func ParseFile(filename string) error {
 			break
 		}
 	}
+	fmt.Println(af.rooms["7"].links)
 	return nil
 }
 
