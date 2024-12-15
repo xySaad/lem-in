@@ -14,10 +14,7 @@ func (af *antFarm) parseRoomList() error {
 				if exist {
 					return af.ParsingError("duplicated room", 0)
 				}
-				af.rooms[af.currentLine[:i]] = &room{
-					x: -1,
-					y: -1,
-				}
+				af.rooms[af.currentLine[:i]] = &room{}
 				if af.state.prevState == start {
 					af.startRoom = af.currentLine[:i]
 				}
