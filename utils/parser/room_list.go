@@ -14,7 +14,9 @@ func (af *antFarm) parseRoomList() error {
 				if exist {
 					return af.ParsingError("duplicated room", 0)
 				}
-				af.rooms[af.currentLine[:i]] = &room{}
+				af.rooms[af.currentLine[:i]] = &room{
+					links: map[string]struct{}{},
+				}
 				if af.state.prevState == start {
 					af.startRoom = af.currentLine[:i]
 				}
@@ -25,12 +27,15 @@ func (af *antFarm) parseRoomList() error {
 				af.state.expectedToken = x
 				continue
 			}
-			if char == '-' {
+			if char == '-' && i != 0 {
+				if af.startRoom == "" || af.endRoom == "" {
+					return af.ParsingError("no start/end room provided", 0)
+				}
 				if af.startRoom == "" {
 					return af.ParsingError("no start room")
 				}
 				af.state.prevState = roomsList
-				af.state.expectedState = links
+				af.state.expectedState = roomLinks
 				return nil
 			}
 		case x:

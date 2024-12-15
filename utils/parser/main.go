@@ -73,7 +73,11 @@ func ParseFile(filename string) error {
 			break
 		}
 	}
-	fmt.Println(af.rooms["7"].links)
+	fmt.Println("start:", af.startRoom, "end:", af.endRoom)
+
+	for name, room := range af.rooms {
+		fmt.Print("room:", name, " x:", room.x, " y:", room.y, " links:", room.links, "\n")
+	}
 	return nil
 }
 
@@ -85,7 +89,8 @@ func (af *antFarm) parseLine() error {
 			af.state.expectedToken = roomCharacter
 		}()
 		return af.parseRoomList()
-	case links:
+	case roomLinks:
+		af.state.prevToken = roomCharacter
 		return af.parseRoomLinks()
 	}
 	return nil

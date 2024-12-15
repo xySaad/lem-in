@@ -5,7 +5,7 @@ const (
 	start = iota
 	roomsList
 	end
-	links
+	roomLinks
 	// tokens
 	antsNumber
 	roomCharacter
@@ -30,8 +30,8 @@ type antFarm struct {
 }
 
 type room struct {
-	links []string
-	x, y int
+	links map[string]struct{}
+	x, y  int
 }
 
 func initFarm() antFarm {
