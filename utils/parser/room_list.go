@@ -49,7 +49,7 @@ func (af *AntFarm) parseRoomList() error {
 				continue
 			}
 			if char >= '0' && char <= '9' {
-				af.Rooms[af.currentLine[:spaceIndex]].x = af.Rooms[af.currentLine[:spaceIndex]].x*10 + int(char-'0')
+				af.Rooms[af.currentLine[:spaceIndex]].X = af.Rooms[af.currentLine[:spaceIndex]].X*10 + int(char-'0')
 				af.state.prevToken = x
 			} else {
 				return af.parsingError("invalid x value", i)
@@ -64,7 +64,7 @@ func (af *AntFarm) parseRoomList() error {
 				continue
 			}
 			if char >= '0' && char <= '9' {
-				af.Rooms[af.currentLine[:spaceIndex]].y = af.Rooms[af.currentLine[:spaceIndex]].y*10 + int(char-'0')
+				af.Rooms[af.currentLine[:spaceIndex]].Y = af.Rooms[af.currentLine[:spaceIndex]].Y*10 + int(char-'0')
 				af.state.prevToken = y
 			} else {
 				return af.parsingError("invalid y value", i)
@@ -76,15 +76,15 @@ func (af *AntFarm) parseRoomList() error {
 		if !alo {
 			return af.parsingError("invalid format", 0)
 		}
-		if room.x < room.y {
-			uniquePair := room.y*room.y + room.x
+		if room.X < room.Y {
+			uniquePair := room.Y*room.Y + room.X
 			_, exists := af.xyPairs[uniquePair]
 			if exists {
 				return af.parsingError("duplicated coordinates", 0)
 			}
 			af.xyPairs[uniquePair] = struct{}{}
 		} else {
-			uniquePair := room.x*room.x + room.x + room.y
+			uniquePair := room.X*room.X + room.X + room.Y
 			_, exists := af.xyPairs[uniquePair]
 			if exists {
 				return af.parsingError("duplicated coordinates", 0)

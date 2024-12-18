@@ -73,12 +73,6 @@ func ParseFile(filename string) (*AntFarm, error) {
 			break
 		}
 	}
-	fmt.Println("start:", af.StartRoom, "end:", af.EndRoom)
-
-	for name, room := range af.Rooms {
-		fmt.Print("room:", name, " x:", room.x, " y:", room.y, " links:", room.Links, "\n")
-	}
-	fmt.Println(af)
 	return af, nil
 }
 

@@ -31,7 +31,7 @@ type AntFarm struct {
 
 type room struct {
 	Links map[string]struct{}
-	x, y  int
+	X, Y  int
 }
 
 func initFarm() *AntFarm {

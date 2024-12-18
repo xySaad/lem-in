@@ -24,8 +24,15 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(antFarm)
+
+	fmt.Println("start:", antFarm.StartRoom, "end:", antFarm.EndRoom)
+	for name, room := range antFarm.Rooms {
+		fmt.Print("room:", name, " x:", room.X, " y:", room.Y, " links:", room.Links, "\n")
+	}
+
 	paths := bfs.Bfs(antFarm)
 	fmt.Println("paths from start to end")
-	fmt.Println(paths)
+	for _, path := range paths {
+		fmt.Println(path)
+	}
 }
