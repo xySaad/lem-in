@@ -20,14 +20,14 @@ func ParseFile(filename string) (*AntFarm, error) {
 	line := []byte{}
 
 	for {
-		_, err := file.Read(buff)
+		n, err := file.Read(buff)
+		if n == 0 {
+			break
+		}
 		if err != nil && err != io.EOF {
 			return nil, err
 		}
 		if buff[0] == '\n' {
-			if len(line) == 0 {
-				continue
-			}
 			af.currentLine = string(line)
 			af.state.linePosition++
 			if af.state.linePosition == 1 {
