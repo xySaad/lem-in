@@ -25,6 +25,9 @@ func ParseFile(filename string) (*AntFarm, error) {
 			return nil, err
 		}
 		if buff[0] == '\n' || n == 0 {
+			if len(line) == 0 && n == 0 {
+				break
+			}
 			af.currentLine = string(line)
 			af.state.linePosition++
 			if af.state.linePosition == 1 {
@@ -66,7 +69,7 @@ func ParseFile(filename string) (*AntFarm, error) {
 			line = append(line, buff[0])
 		}
 
-		if err == io.EOF || n == 0 {
+		if err == io.EOF {
 			break
 		}
 	}
