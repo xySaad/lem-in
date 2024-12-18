@@ -8,12 +8,12 @@ import (
 	"strconv"
 )
 
-func ParseFile(filename string) error {
+func ParseFile(filename string) (*AntFarm, error) {
 	af := initFarm()
 
 	file, err := os.Open(filename)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	buff := make([]byte, 1)
@@ -22,7 +22,7 @@ func ParseFile(filename string) error {
 	for {
 		_, err := file.Read(buff)
 		if err != nil && err != io.EOF {
-			return err
+			return nil, err
 		}
 		if buff[0] == '\n' {
 			af.currentLine = string(line)
@@ -30,27 +30,27 @@ func ParseFile(filename string) error {
 			if af.state.linePosition == 1 {
 				n, err := strconv.Atoi(af.currentLine)
 				if err != nil || n <= 0 {
-					return errors.New("invalid ants number")
+					return nil, errors.New("invalid ants number")
 				}
 				af.number = n
 				af.state.prevToken = antsNumber
 				af.state.expectedState = roomsList
 			}
 			if len(line) == 0 {
-				return af.ParsingError("invalid empty line", 0)
+				return nil, af.parsingError("invalid empty line", 0)
 			}
 			if line[0] == '#' {
 				if string(line) == "##start" {
-					if af.startRoom != "" || af.state.prevState == start {
-						return af.ParsingError("duplicated start room")
+					if af.StartRoom != "" || af.state.prevState == start {
+						return nil, af.parsingError("duplicated start room")
 					}
 					af.state.prevState = start
 					af.state.expectedState = roomsList
 					af.state.expectedToken = roomCharacter
 				}
 				if string(line) == "##end" {
-					if af.endRoom != "" || af.state.prevState == end {
-						return af.ParsingError("duplicated end room")
+					if af.EndRoom != "" || af.state.prevState == end {
+						return nil, af.parsingError("duplicated end room")
 					}
 
 					af.state.expectedState = roomsList
@@ -62,7 +62,7 @@ func ParseFile(filename string) error {
 			}
 			err = af.parseLine()
 			if err != nil {
-				return err
+				return nil, err
 			}
 			line = nil
 		} else {
@@ -73,15 +73,16 @@ func ParseFile(filename string) error {
 			break
 		}
 	}
-	fmt.Println("start:", af.startRoom, "end:", af.endRoom)
+	fmt.Println("start:", af.StartRoom, "end:", af.EndRoom)
 
-	for name, room := range af.rooms {
-		fmt.Print("room:", name, " x:", room.x, " y:", room.y, " links:", room.links, "\n")
+	for name, room := range af.Rooms {
+		fmt.Print("room:", name, " x:", room.x, " y:", room.y, " links:", room.Links, "\n")
 	}
-	return nil
+	fmt.Println(af)
+	return af, nil
 }
 
-func (af *antFarm) parseLine() error {
+func (af *AntFarm) parseLine() error {
 	switch af.state.expectedState {
 	case roomsList:
 		defer func() {
@@ -96,10 +97,10 @@ func (af *antFarm) parseLine() error {
 	return nil
 }
 
-func (af *antFarm) ParsingError(err string, i ...int) error {
+func (af *AntFarm) parsingError(err string, i ...int) error {
 	if len(i) == 1 {
 		index := i[0]
-		//TODO: show the word where the error is
+		// TODO: show the word where the error is
 		err += fmt.Sprint(": ", "\""+af.currentLine+"\" at ", af.state.linePosition, ":", index)
 	}
 

@@ -1,33 +1,38 @@
 package parser
 
-func (af *antFarm) parseRoomLinks() error {
+func (af *AntFarm) parseRoomLinks() error {
 	for i, char := range af.currentLine {
+		var (
+			from, to *room
+			exists   bool
+		)
 		if char == '-' {
 			if i == len(af.currentLine)-1 {
-				return af.ParsingError("invalid link format", 0)
+				return af.parsingError("invalid link format", 0)
 			}
 			if af.currentLine[:i] == af.currentLine[i+1:] {
-				return af.ParsingError("can't link a room with itself", 0)
+				return af.parsingError("can't link a room with itself", 0)
 			}
-			room, exists := af.rooms[af.currentLine[:i]]
+			from, exists = af.Rooms[af.currentLine[:i]]
 			if !exists {
-				return af.ParsingError("can't link unexisted room", 0)
+				return af.parsingError("can't link unexisted room", 0)
 			}
-			_, exists = af.rooms[af.currentLine[i+1:]]
+			to, exists = af.Rooms[af.currentLine[i+1:]]
 			if !exists {
-				return af.ParsingError("can't link unexisted room", 0)
+				return af.parsingError("can't link unexisted room", 0)
 			}
-			_, ok := room.links[af.currentLine[i+1:]]
+			_, ok := to.Links[af.currentLine[i+1:]]
 			if ok {
-				return af.ParsingError("duplicated links", 0)
+				return af.parsingError("duplicated links", 0)
 			}
-			room.links[af.currentLine[i+1:]] = struct{}{}
+			from.Links[af.currentLine[i+1:]] = struct{}{}
+			to.Links[af.currentLine[:i]] = struct{}{}
 			af.state.prevToken = dash
 			break
 		}
 	}
 	if af.state.prevToken != dash {
-		return af.ParsingError("invalid link", 0)
+		return af.parsingError("invalid link", 0)
 	}
 	return nil
 }

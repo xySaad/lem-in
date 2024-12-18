@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
-	"lem-in/utils/parser"
 	"os"
+
+	"lem-in/utils/bfs"
+	"lem-in/utils/parser"
 )
 
 func main() {
@@ -17,9 +19,13 @@ func main() {
 		fmt.Println("usage: go run . <filename.txt>")
 		return
 	}
-	err := parser.ParseFile(os.Args[1])
+	antFarm, err := parser.ParseFile(os.Args[1])
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+	fmt.Println(antFarm)
+	paths := bfs.Bfs(antFarm)
+	fmt.Println("paths from start to end")
+	fmt.Println(paths)
 }

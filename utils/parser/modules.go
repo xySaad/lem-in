@@ -20,24 +20,24 @@ type state struct {
 	prevToken, expectedToken, prevState, expectedState, linePosition int
 }
 
-type antFarm struct {
+type AntFarm struct {
 	number             int
 	xyPairs            map[int]struct{}
-	rooms              map[string]*room
-	startRoom, endRoom string
+	Rooms              map[string]*room
+	StartRoom, EndRoom string
 	state              *state
 	currentLine        string
 }
 
 type room struct {
-	links map[string]struct{}
+	Links map[string]struct{}
 	x, y  int
 }
 
-func initFarm() antFarm {
-	return antFarm{
+func initFarm() *AntFarm {
+	return &AntFarm{
 		xyPairs: map[int]struct{}{},
-		rooms:   map[string]*room{},
+		Rooms:   map[string]*room{},
 		state: &state{
 			expectedState: antsNumber,
 		},
