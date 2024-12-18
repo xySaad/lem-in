@@ -36,6 +36,7 @@ func (af *AntFarm) parseRoomList() error {
 				}
 				af.state.prevState = roomsList
 				af.state.expectedState = roomLinks
+				af.parseRoomLinks()
 				return nil
 			}
 		case x:
