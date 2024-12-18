@@ -25,6 +25,9 @@ func ParseFile(filename string) (*AntFarm, error) {
 			return nil, err
 		}
 		if buff[0] == '\n' {
+			if len(line) == 0 {
+				continue
+			}
 			af.currentLine = string(line)
 			af.state.linePosition++
 			if af.state.linePosition == 1 {
@@ -35,9 +38,6 @@ func ParseFile(filename string) (*AntFarm, error) {
 				af.number = n
 				af.state.prevToken = antsNumber
 				af.state.expectedState = roomsList
-			}
-			if len(line) == 0 {
-				return nil, af.parsingError("invalid empty line", 0)
 			}
 			if line[0] == '#' {
 				if string(line) == "##start" {
