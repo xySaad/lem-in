@@ -21,7 +21,7 @@ type state struct {
 }
 
 type AntFarm struct {
-	number             int
+	Number             int
 	xyPairs            map[int]struct{}
 	Rooms              map[string]*room
 	StartRoom, EndRoom string

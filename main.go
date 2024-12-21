@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"lem-in/utils"
 	"lem-in/utils/parser"
 )
 
@@ -24,16 +25,6 @@ func main() {
 		return
 	}
 
-	fmt.Println("start:", antFarm.StartRoom, "end:", antFarm.EndRoom)
-	for name, room := range antFarm.Rooms {
-		fmt.Print("room:", name, " x:", room.X, " y:", room.Y, " links:", room.Links, "\n")
-	}
-
-	// paths := utils.FindAllPaths(antFarm)
-	// fmt.Println(paths)
-	// paths := bfs.Bfs(antFarm)
-	// fmt.Println("paths from start to end")
-	// for _, path := range paths {
-	// 	fmt.Println(path)
-	// }
+	paths := utils.FindAllPaths(antFarm)
+	fmt.Printf("len(paths): %v\n", len(paths))
 }
