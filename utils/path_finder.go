@@ -29,7 +29,7 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 		paths[link] = [][]string{}
 		queue = append(queue, queued{parent: link, room: link})
 		visited[link] = &visitedRoom{
-			parrent: af.StartRoom,
+			parrent: link,
 		}
 	}
 	for len(queue) > 0 {
@@ -56,6 +56,9 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 		if current.room == af.EndRoom {
 			continue
 		}
+		// store paths to pass from when all links are conflicted
+		optimalRoom := ""
+
 		// range over the links of current queued room
 		for room := range af.Rooms[current.room].Links {
 			vR, ok := visited[room]
@@ -66,6 +69,16 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 				}
 			}
 			if ok && room != af.EndRoom {
+				_, ok := visited[optimalRoom]
+				// biggest index is the best path to pass from
+				if room != af.StartRoom && current.parent != vR.parrent && (!ok || vR.index > visited[optimalRoom].index) {
+					debugPrintf("add optimal room: %v\n", room)
+					debugPrintf("current.parent: %v\n", current.parent)
+					debugPrintf("vR.parrent: %v\n", vR.parrent)
+					optimalRoom = room
+				}
+				//TODO: handle the case where multiple rooms has the same index
+
 				debugPrint("skipping room:", room, "link of:", current.room)
 				continue
 			}
@@ -105,23 +118,14 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 		debugPrint("[", foundAway, "]", "after iterating over links:")
 		debugPrintf("paths: %v\n", paths)
 		if !foundAway && len(paths[current.parent]) <= 1 {
+			debugPrintf("optimalRoom: %v\n", optimalRoom)
 			debugPrint(current.room, "didn't found a way")
 			done := false
-			for room := range af.Rooms[current.room].Links {
-				roomToRemove := visited[room]
-				if roomToRemove.parrent == current.parent {
-					continue
-				}
-
-				// the next commented code is replaced by the above condition
-				// if room == current.parent || len(paths[current.parent][0]) > 1 && room == paths[current.parent][0][len(paths[current.parent][0])-2] {
-				// 	continue
-				// }
-				if len(paths[roomToRemove.parrent]) <= roomToRemove.duplication {
-					continue
-				}
+			roomToRemove := visited[optimalRoom]
+			debugPrint(roomToRemove.parrent != current.parent, len(paths[roomToRemove.parrent]) > roomToRemove.duplication)
+			if roomToRemove.parrent != current.parent && len(paths[roomToRemove.parrent]) > roomToRemove.duplication {
 				for i, conflictedPath := range paths[roomToRemove.parrent] {
-					if roomToRemove.index < len(conflictedPath) && conflictedPath[roomToRemove.index] == room {
+					if roomToRemove.index < len(conflictedPath) && conflictedPath[roomToRemove.index] == optimalRoom {
 						debugPrint("removing:", conflictedPath[roomToRemove.index])
 						for _, r := range paths[roomToRemove.parrent][i] {
 							delete(visited, r)
@@ -131,8 +135,7 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 					}
 				}
 				if done {
-					delete(visited, room)
-					break
+					delete(visited, optimalRoom)
 				}
 			}
 			if done {
