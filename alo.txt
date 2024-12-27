@@ -1,9 +1,0 @@
-start: 1 end: 0
-room:3 x:16 y:3 links:map[1:{} 4:{} 5:{}]
-room:4 x:16 y:5 links:map[0:{} 2:{} 3:{} 7:{}]
-room:5 x:9 y:3 links:map[2:{} 3:{} 6:{}]
-room:6 x:1 y:5 links:map[0:{} 5:{} 7:{}]
-room:7 x:4 y:8 links:map[2:{} 4:{} 6:{}]
-room:0 x:9 y:5 links:map[4:{} 6:{}]
-room:1 x:23 y:3 links:map[2:{} 3:{}]
-room:2 x:16 y:7 links:map[1:{} 4:{} 5:{} 7:{}]

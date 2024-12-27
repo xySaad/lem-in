@@ -25,6 +25,11 @@ func main() {
 		return
 	}
 
-	paths := utils.FindAllPaths(antFarm)
-	fmt.Printf("len(paths): %v\n", len(paths))
+	paths := utils.FindPaths(antFarm)
+	// fmt.Printf("len(paths): %v\n", len(paths))
+	// for startLink, path := range paths {
+	// 	fmt.Printf("startLink: %v ", startLink)
+	// 	fmt.Printf("path: %v\n", path)
+	// }
+	utils.DistributeAnts(antFarm, paths)
 }
