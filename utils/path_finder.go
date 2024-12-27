@@ -61,7 +61,9 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 			vR, ok := visited[room]
 			if ok && vR.parrent != current.parent && vR.parrent != "" && vR.parrent != af.StartRoom && len(paths[current.parent]) > 0 {
 				debugPrint("possible way in parrent:", current.parent, "from:", current.room, "to:", room, "index:", vR.index, "\nroom visited in:", vR.parrent)
-				track[current.parent] = append(track[current.parent], trackedRoom{name: current.room, index: len(paths[current.parent][0]) - 1})
+				if len(track[current.parent]) == 0 || track[current.parent][len(track[current.parent])-1].name != current.room {
+					track[current.parent] = append(track[current.parent], trackedRoom{name: current.room, index: len(paths[current.parent][0]) - 1})
+				}
 			}
 			if ok && room != af.EndRoom {
 				debugPrint("skipping room:", room, "link of:", current.room)
