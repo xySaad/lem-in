@@ -179,13 +179,7 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 			visited[current.room].duplication--
 		}
 		if len(paths[current.parent]) > 0 && current.room != current.parent {
-			if foundAway {
-				debugPrint("remove first room?!")
-				paths[current.parent] = paths[current.parent][1:]
-			} else {
-				// this line should be removed
-				paths[current.parent] = append(paths[current.parent][1:], paths[current.parent][0])
-			}
+			paths[current.parent] = paths[current.parent][1:]
 		}
 		debugPrint("final:", paths)
 	}
