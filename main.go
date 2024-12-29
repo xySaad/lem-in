@@ -31,5 +31,5 @@ func main() {
 	// 	fmt.Printf("startLink: %v ", startLink)
 	// 	fmt.Printf("path: %v\n", path)
 	// }
-	utils.DistributeAnts(antFarm, paths)
+	utils.DistributeAnts(antFarm, utils.ConvertPaths(antFarm, paths))
 }
