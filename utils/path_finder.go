@@ -129,9 +129,10 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 				for i, conflictedPath := range paths[roomToRemove.parrent] {
 					if roomToRemove.index < len(conflictedPath) && conflictedPath[roomToRemove.index] == optimalRoom {
 						debugPrint("removing:", conflictedPath[roomToRemove.index])
-						for _, r := range paths[roomToRemove.parrent][i] {
+						for _, r := range paths[roomToRemove.parrent][i][roomToRemove.index:] {
 							delete(visited, r)
 						}
+						debugPrint("set to nil:", paths[roomToRemove.parrent][i])
 						paths[roomToRemove.parrent][i] = nil
 						done = true
 					}
@@ -186,6 +187,10 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 			visited[current.room].duplication--
 		}
 		if len(paths[current.parent]) > 0 && current.room != current.parent {
+			if !foundAway {
+				debugPrint("remove from visited beause it didn't split:", paths[current.parent][0][len(paths[current.parent][0])-1])
+				delete(visited, paths[current.parent][0][len(paths[current.parent][0])-1])
+			}
 			paths[current.parent] = paths[current.parent][1:]
 		}
 		debugPrint("final:", paths)
