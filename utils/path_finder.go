@@ -35,6 +35,12 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
+		if len(paths[current.parent]) > 0 && paths[current.parent][0][len(paths[current.parent][0])-1] != current.room {
+			if len(track[current.parent]) > 0 {
+				track[current.parent] = track[current.parent][:len(track[current.parent])-1]
+			}
+			continue
+		}
 		foundAway := false
 		debugPrint("current room:", current.room)
 		debugPrint("initiail:", paths)
@@ -52,13 +58,16 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 			debugPrint("found endroom => continue")
 			continue
 		}
-		// if the current room is the end skip (case: start is linked with the end directly)
-		if current.room == af.EndRoom {
-			continue
-		}
+
+		// // if the current room is the end skip (case: start is linked with the end directly)
+		// if current.room == af.EndRoom {
+		// 	continue
+		// }
+
 		// store paths to pass from when all links are conflicted
 		optimalRoom := ""
 
+		// pathsLength := len(paths[current.parent])
 		// range over the links of current queued room
 		for room := range af.Rooms[current.room].Links {
 			vR, ok := visited[room]
@@ -85,34 +94,37 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 			// mark the room as visited
 			visited[room] = &visitedRoom{
 				parrent:     current.parent,
-				duplication: 1,
-			}
-
-			// the room is gonna be splitted as much as it's links
-			// we increment duplication by one because a subpath is gonna be created
-			_, ok = visited[current.room]
-			if ok {
-				visited[current.room].duplication++
+				duplication: 0,
 			}
 
 			foundAway = true
-			if room == "a" {
-				debugPrint("a found it's way through", room)
-			}
+
 			newPath := []string{}
 			if len(paths[current.parent]) > 0 && current.room != current.parent {
 				newPath = append(newPath, paths[current.parent][0]...)
 			}
-			if current.room == "a" {
-				debugPrint("path to append:", newPath)
-			}
 
 			newPath = append(newPath, room)
+			for _, r := range newPath {
+				debugPrintf("modify visited[r].duplication: %v ++\n", r)
+				visited[r].duplication++
+				if r == "46" {
+					debugPrintf("visited[r].duplication: %v\n", visited[r].duplication)
+				}
+			}
 			// store the index of the added room
 			visited[room].index = len(newPath) - 1
 			// append it
 			paths[current.parent] = append(paths[current.parent], newPath)
 			queue = append(queue, queued{parent: current.parent, room: room})
+		}
+
+		if foundAway {
+			// _, ok := visited[current.room]
+			// if !ok {
+			// 	panic(current.room)
+			// }
+			visited[current.room].duplication--
 		}
 
 		debugPrint("[", foundAway, "]", "after iterating over links:")
@@ -123,21 +135,36 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 			done := false
 			roomToRemove, ok := visited[optimalRoom]
 			if ok {
+				debugPrintf("roomToRemove.duplication: %v\n", roomToRemove.duplication)
 				debugPrint(roomToRemove.parrent != current.parent, len(paths[roomToRemove.parrent]) > roomToRemove.duplication)
 			}
 			if ok && roomToRemove.parrent != current.parent && len(paths[roomToRemove.parrent]) > roomToRemove.duplication {
+				newGroupPaths := [][]string{}
+
 				for i, conflictedPath := range paths[roomToRemove.parrent] {
 					if roomToRemove.index < len(conflictedPath) && conflictedPath[roomToRemove.index] == optimalRoom {
 						debugPrint("removing:", conflictedPath[roomToRemove.index])
-						for _, r := range paths[roomToRemove.parrent][i][roomToRemove.index:] {
-							delete(visited, r)
+						for _, r := range paths[roomToRemove.parrent][i] {
+							if _, ok := visited[r]; ok && visited[r].duplication == 1 {
+								debugPrint("remove visited room", r)
+								delete(visited, r)
+							} else if ok {
+								debugPrintf("modify visited[r].duplication: %v --\n", r)
+								visited[r].duplication--
+								if r == "46" {
+									debugPrintf("visited[r].duplication: %v\n", visited[r].duplication)
+								}
+							}
 						}
 						debugPrint("set to nil:", paths[roomToRemove.parrent][i])
-						paths[roomToRemove.parrent][i] = nil
 						done = true
+					} else {
+						newGroupPaths = append(newGroupPaths, conflictedPath)
 					}
 				}
+				paths[roomToRemove.parrent] = newGroupPaths
 				if done {
+					debugPrint("remove visited room", optimalRoom, "[optimal]")
 					delete(visited, optimalRoom)
 				}
 			}
@@ -156,6 +183,8 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 
 					if nextRoomInQueue.name == current.room {
 						if len(track[current.parent]) <= 1 {
+							debugPrint("optimal room:", optimalRoom)
+							debugPrint("queue:")
 							debugPrint("can't backtrack ", track[current.parent])
 							continue
 						}
@@ -180,16 +209,22 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 			}
 			continue
 		}
-		// the path foundaway means it got splited into subpath
-		// it's parrent path has been removed so we decrement one
-		_, ok := visited[current.room]
-		if ok {
-			visited[current.room].duplication--
-		}
+
 		if len(paths[current.parent]) > 0 && current.room != current.parent {
 			if !foundAway {
 				debugPrint("remove from visited beause it didn't split:", paths[current.parent][0][len(paths[current.parent][0])-1])
-				delete(visited, paths[current.parent][0][len(paths[current.parent][0])-1])
+				for _, r := range paths[current.parent][0] {
+					if visited[r].duplication == 1 {
+						debugPrint("remove visited room", r)
+						delete(visited, r)
+					} else {
+						debugPrintf("modify visited[r].duplication: %v --\n", r)
+						visited[r].duplication--
+						if r == "46" {
+							debugPrintf("visited[r].duplication: %v\n", visited[r].duplication)
+						}
+					}
+				}
 			}
 			paths[current.parent] = paths[current.parent][1:]
 		}
