@@ -14,3 +14,10 @@ func debugPrint(v ...interface{}) {
 func debugPrintf(f string, v ...interface{}) {
 	fmt.Printf(f, v...)
 }
+func DebugPrint(v ...interface{}) {
+	fmt.Println(v...)
+}
+
+func DebugPrintf(f string, v ...interface{}) {
+	fmt.Printf(f, v...)
+}

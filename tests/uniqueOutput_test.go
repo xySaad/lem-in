@@ -9,7 +9,7 @@ import (
 )
 
 func TestFindPaths(t *testing.T) {
-	antFarm, err := parser.ParseFile("../examples/test.txt")
+	antFarm, err := parser.ParseFile("../examples/example001.txt")
 	if err != nil {
 		t.Fatalf("Failed to parse file: %v", err)
 	}

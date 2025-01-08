@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"lem-in/utils"
 	"lem-in/utils/parser"
+	"lem-in/utils/pathfinder"
+	"os"
 )
 
 func main() {
@@ -24,12 +24,9 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	pf := pathfinder.New(antFarm)
 
-	paths := utils.FindPaths(antFarm)
-	// fmt.Printf("len(paths): %v\n", len(paths))
-	// for startLink, path := range paths {
-	// 	fmt.Printf("startLink: %v ", startLink)
-	// 	fmt.Printf("path: %v\n", path)
-	// }
+	paths := pf.FindPaths()
+
 	utils.DistributeAnts(antFarm, utils.ConvertPaths(antFarm, paths))
 }

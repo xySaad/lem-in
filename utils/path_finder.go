@@ -18,6 +18,47 @@ type trackedRoom struct {
 	index int
 }
 
+type PathFinder struct {
+	AntFarm        *parser.AntFarm
+	Paths          map[string][][]string
+	Track          map[string][]trackedRoom
+	Queue          []queued
+	Visited        map[string]*visitedRoom
+	CurrentInQueue queued
+}
+
+func NewPathFinder(af *parser.AntFarm) (pf *PathFinder) {
+	return &PathFinder{
+		AntFarm:        af,
+		Paths:          map[string][][]string{},
+		Track:          map[string][]trackedRoom{},
+		Queue:          []queued{},
+		Visited:        map[string]*visitedRoom{},
+		CurrentInQueue: queued{},
+	}
+}
+
+func (pf *PathFinder) init() {
+	pf.Visited[pf.AntFarm.StartRoom] = &visitedRoom{}
+	// Start from the starting room
+	for link := range pf.AntFarm.Rooms[pf.AntFarm.StartRoom].Links {
+		pf.Paths[link] = [][]string{}
+		pf.Queue = append(pf.Queue, queued{parent: link, room: link})
+		pf.Visited[link] = &visitedRoom{
+			parrent: link,
+		}
+	}
+}
+
+func (pf *PathFinder) FindPaths(af *parser.AntFarm) map[string][][]string {
+	pf.init()
+	for len(pf.Queue) > 0 {
+		pf.CurrentInQueue = pf.Queue[0]
+		pf.Queue = pf.Queue[1:]
+	}
+	return pf.Paths
+}
+
 func FindPaths(af *parser.AntFarm) map[string][][]string {
 	paths := make(map[string][][]string)
 	track := make(map[string][]trackedRoom)
@@ -32,6 +73,7 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 			parrent: link,
 		}
 	}
+
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
@@ -59,11 +101,11 @@ func FindPaths(af *parser.AntFarm) map[string][][]string {
 			continue
 		}
 
-		// // if the current room is the end skip (case: start is linked with the end directly)
-		// if current.room == af.EndRoom {
-		// 	continue
-		// }
-
+		// if the current room is the end skip (case: start is linked with the end directly)
+		if current.room == af.EndRoom {
+			debugPrint("zbi")
+			continue
+		}
 		// store paths to pass from when all links are conflicted
 		optimalRoom := ""
 
