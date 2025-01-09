@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"lem-in/utils"
 	"lem-in/utils/parser"
+	"lem-in/utils/pathfinder"
 	"testing"
 )
 
@@ -18,7 +19,8 @@ func TestFindPaths(t *testing.T) {
 	outputs := make(map[string]struct{})
 
 	for i := 0; i < numCalls; i++ {
-		paths := utils.FindPaths(antFarm)
+		pf := pathfinder.New(antFarm)
+		paths := pf.FindPaths()
 
 		outputStr, err := slice2Json(utils.ConvertPaths(antFarm, paths))
 		if err != nil {

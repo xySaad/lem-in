@@ -37,7 +37,7 @@ func initializeAntGroups(count int) [][]string {
 
 func DistributeAnts(af *parser.AntFarm, ways [][]string) {
 
-	debugPrintf("ways: %v\n", ways)
+	DebugPrintf("ways: %v\n", ways)
 
 	antGroups := initializeAntGroups(len(ways))
 	antID := 1
@@ -84,5 +84,5 @@ func manageTraffic(af *parser.AntFarm, antGroups, ways [][]string) {
 		fmt.Println()
 		steps++
 	}
-	debugPrint(steps)
+	DebugPrint(steps)
 }

@@ -1,7 +1,7 @@
 package pathfinder
 
 func (pf *PathFinder) CurrentTunnel() [][]string {
-	return pf.Tunnels[pf.CurrentInQueue.parent]
+	return pf.Tunnels[pf.CurrentParrent()]
 }
 
 func (pf *PathFinder) CurrentPath() []string {
@@ -12,7 +12,7 @@ func (pf *PathFinder) LastRoom() string {
 }
 
 func (pf *PathFinder) ParrentTrack() []trackedRoom {
-	return pf.Track[pf.CurrentInQueue.parent]
+	return pf.Track[pf.CurrentParrent()]
 }
 
 func (pf *PathFinder) LastTrack() trackedRoom {

@@ -6,7 +6,7 @@ import (
 )
 
 func ConvertPaths(af *parser.AntFarm, paths map[string][][]string) (ways [][]string) {
-	debugPrintf("paths: %v\n", paths)
+	DebugPrintf("paths: %v\n", paths)
 	// Create a map to hold the smallest path for each starting link
 	smallestPaths := make(map[string][]string)
 	for startLink, way := range paths {
