@@ -23,7 +23,7 @@ func (pf *PathFinder) PossibleWay(link string) bool {
 		visitedLink.parrent != "" &&
 		visitedLink.parrent != pf.AntFarm.StartRoom &&
 		len(pf.CurrentTunnel()) > 0 &&
-		pf.LastTrack().name != pf.CurrentInQueue.room
+		pf.LastTrack().Name != pf.CurrentInQueue.room
 }
 
 // range over the links of current queued room
@@ -39,7 +39,8 @@ func (pf *PathFinder) ForkPath() (foundAway bool) {
 		if ok {
 			if pf.PossibleWay(link) {
 				utils.DebugPrint("possible way in parrent:", currentParrent, "from:", currentRoom, "to:", link, "index:", visitedLink.index, "\nroom visited in:", visitedLink.parrent)
-				pf.Track[currentParrent] = append(pf.ParrentTrack(), trackedRoom{name: currentRoom, index: len(pf.CurrentPath()) - 1})
+				pf.CurrentPath().Track = append(pf.ParrentTrack(), utils.TrackedRoom{Name: currentRoom, Index: len(pf.CurrentPath().Route) - 1})
+				// pf.Track[currentParrent] = append(pf.ParrentTrack(), trackedRoom{name: currentRoom, index: len(pf.CurrentPath().Route) - 1})
 			}
 
 			if pf.IsOptimal(link) {
@@ -65,7 +66,7 @@ func (pf *PathFinder) ForkPath() (foundAway bool) {
 		newPath := []string{}
 
 		if len(pf.CurrentTunnel()) > 0 && currentRoom != currentParrent {
-			newPath = append(newPath, pf.CurrentPath()...)
+			newPath = append(newPath, (pf.CurrentPath().Route)...)
 		}
 
 		newPath = append(newPath, link)
@@ -76,7 +77,10 @@ func (pf *PathFinder) ForkPath() (foundAway bool) {
 		// store the index of the added room
 		pf.Visited[link].index = len(newPath) - 1
 		// append it
-		pf.Tunnels[currentParrent] = append(pf.CurrentTunnel(), newPath)
+		pf.Tunnels[currentParrent] = append(pf.CurrentTunnel(), utils.Path{
+			Route: newPath,
+			Track: pf.ParrentTrack(),
+		})
 		pf.AppendQueue(queued{parent: currentParrent, room: link})
 	}
 	return

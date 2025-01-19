@@ -3,14 +3,15 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
+	"testing"
+
 	"lem-in/utils"
 	"lem-in/utils/parser"
 	"lem-in/utils/pathfinder"
-	"testing"
 )
 
 func TestFindPaths(t *testing.T) {
-	antFarm, err := parser.ParseFile("../examples/example001.txt")
+	antFarm, err := parser.ParseFile("../examples/100.txt")
 	if err != nil {
 		t.Fatalf("Failed to parse file: %v", err)
 	}

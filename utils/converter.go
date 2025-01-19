@@ -1,11 +1,12 @@
 package utils
 
 import (
-	"lem-in/utils/parser"
 	"sort"
+
+	"lem-in/utils/parser"
 )
 
-func ConvertPaths(af *parser.AntFarm, paths map[string][][]string) (ways [][]string) {
+func ConvertPaths(af *parser.AntFarm, paths map[string][]Path) (ways [][]string) {
 	DebugPrintf("paths: %v\n", paths)
 	// Create a map to hold the smallest path for each starting link
 	smallestPaths := make(map[string][]string)
@@ -15,9 +16,9 @@ func ConvertPaths(af *parser.AntFarm, paths map[string][][]string) (ways [][]str
 			continue
 		}
 		for _, path := range way {
-			if len(path) > 0 && path[len(path)-1] == af.EndRoom {
+			if len(path.Route) > 0 && path.Route[len(path.Route)-1] == af.EndRoom {
 				// Create the full path from startLink to the end
-				fullPath := append([]string{af.StartRoom, startLink}, path...)
+				fullPath := append([]string{af.StartRoom, startLink}, path.Route...)
 				// Check if we have a smaller path for this startLink
 				if existingPath, exists := smallestPaths[startLink]; !exists || len(fullPath) < len(existingPath) {
 					smallestPaths[startLink] = fullPath

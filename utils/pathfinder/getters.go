@@ -1,23 +1,29 @@
 package pathfinder
 
-func (pf *PathFinder) CurrentTunnel() [][]string {
+import "lem-in/utils"
+
+func (pf *PathFinder) CurrentTunnel() []utils.Path {
 	return pf.Tunnels[pf.CurrentParrent()]
 }
 
-func (pf *PathFinder) CurrentPath() []string {
-	return pf.CurrentTunnel()[0]
+func (pf *PathFinder) CurrentPath() *utils.Path {
+	return &pf.CurrentTunnel()[0]
 }
+
 func (pf *PathFinder) LastRoom() string {
-	return pf.CurrentPath()[len(pf.CurrentPath())-1]
+	return pf.CurrentPath().Route[len(pf.CurrentPath().Route)-1]
 }
 
-func (pf *PathFinder) ParrentTrack() []trackedRoom {
-	return pf.Track[pf.CurrentParrent()]
+func (pf *PathFinder) ParrentTrack() []utils.TrackedRoom {
+	if len(pf.CurrentTunnel()) == 0 {
+		return []utils.TrackedRoom{}
+	}
+	return pf.CurrentPath().Track
 }
 
-func (pf *PathFinder) LastTrack() trackedRoom {
+func (pf *PathFinder) LastTrack() utils.TrackedRoom {
 	if len(pf.ParrentTrack()) == 0 {
-		return trackedRoom{}
+		return utils.TrackedRoom{}
 	}
 	return pf.ParrentTrack()[len(pf.ParrentTrack())-1]
 }

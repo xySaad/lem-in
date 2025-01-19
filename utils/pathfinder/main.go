@@ -9,7 +9,6 @@ func New(af *parser.AntFarm) (pf *PathFinder) {
 	return &PathFinder{
 		AntFarm: af,
 		Tunnels: Tunnels{},
-		Track:   trackMap{},
 		Visited: map[string]*visitedRoom{},
 	}
 }
@@ -18,7 +17,7 @@ func (pf *PathFinder) init() {
 	pf.Visited[pf.AntFarm.StartRoom] = &visitedRoom{}
 	// Start from the starting room
 	for link := range pf.AntFarm.Rooms[pf.AntFarm.StartRoom].Links {
-		pf.Tunnels[link] = [][]string{}
+		pf.Tunnels[link] = []utils.Path{}
 		pf.AppendQueue(queued{parent: link, room: link})
 		pf.Visited[link] = &visitedRoom{
 			parrent: link,
@@ -26,7 +25,7 @@ func (pf *PathFinder) init() {
 	}
 }
 
-func (pf *PathFinder) FindPaths() map[string][][]string {
+func (pf *PathFinder) FindPaths() map[string][]utils.Path {
 	pf.init()
 	for len(pf.Queue) > 0 {
 		pf.CurrentInQueue = pf.Queue[0]
@@ -34,13 +33,14 @@ func (pf *PathFinder) FindPaths() map[string][][]string {
 
 		if len(pf.CurrentTunnel()) > 0 {
 			if pf.LastRoom() != pf.CurrentInQueue.room {
-				pf.Track.Shift(pf.CurrentParrent())
+				pf.ShiftTrack()
+				// pf.Track.Shift(pf.CurrentParrent())
 				continue
-			} else if len(pf.CurrentPath()) == 0 {
+			} else if len(pf.CurrentPath().Route) == 0 {
 				// if the current queued room has been removed (when a conflict found), delete it's path and skip it
 				pf.Tunnels.Pop(pf.CurrentParrent())
 				continue
-			} else if len(pf.CurrentPath()) > 0 && pf.LastRoom() == pf.AntFarm.EndRoom {
+			} else if len(pf.CurrentPath().Route) > 0 && pf.LastRoom() == pf.AntFarm.EndRoom {
 				// if the current queued room is the end room append it to the end of the slice
 				// "continue" to avoid ranging
 				pf.Tunnels.RotateLeft(pf.CurrentParrent())
@@ -60,6 +60,10 @@ func (pf *PathFinder) FindPaths() map[string][][]string {
 
 		foundAway := pf.ForkPath()
 
+		if foundAway {
+			pf.Visited[pf.CurrentInQueue.room].duplication--
+		}
+
 		if !foundAway && len(pf.CurrentTunnel()) <= 1 {
 			utils.DebugPrintf("optimalRoom: %v\n", pf.OptimalRoom)
 			utils.DebugPrint(pf.CurrentInQueue.room, "didn't found a way")
@@ -70,11 +74,11 @@ func (pf *PathFinder) FindPaths() map[string][][]string {
 				utils.DebugPrintf("roomToRemove.duplication: %v\n", roomToRemove.duplication)
 				utils.DebugPrint(roomToRemove.parrent != pf.CurrentParrent(), len(pf.Tunnels[roomToRemove.parrent]) > roomToRemove.duplication)
 
-				newGroupPaths := [][]string{}
+				newGroupPaths := []utils.Path{}
 
 				for i, conflictedPath := range pf.Tunnels[roomToRemove.parrent] {
-					if roomToRemove.index < len(conflictedPath) && conflictedPath[roomToRemove.index] == pf.OptimalRoom {
-						utils.DebugPrint("removing:", conflictedPath[roomToRemove.index])
+					if roomToRemove.index < len(conflictedPath.Route) && conflictedPath.Route[roomToRemove.index] == pf.OptimalRoom {
+						utils.DebugPrint("removing:", conflictedPath.Route[roomToRemove.index])
 						pf.RemoveConflictedPath(roomToRemove.parrent, i)
 						optimalRoomHasRemoved = true
 					} else {
@@ -94,12 +98,12 @@ func (pf *PathFinder) FindPaths() map[string][][]string {
 				// TODO: back to the last room that has multiple links that are visited by other parrents,
 				// if current parrent has only this path then find an exit (visited room)
 				if len(pf.CurrentTunnel()) > 0 {
-					utils.DebugPrint("dead end ", pf.CurrentInQueue.room, pf.CurrentPath(), pf.Track)
+					utils.DebugPrint("dead end ", pf.CurrentInQueue.room, pf.CurrentPath(), pf.ParrentTrack())
 					utils.DebugPrintf("paths[current.parent][0]: %v\n", pf.CurrentPath())
 					utils.DebugPrintf("track[current.parent]: %v\n", pf.ParrentTrack())
 					nextRoomInQueue := pf.LastTrack()
 
-					if nextRoomInQueue.name == pf.CurrentInQueue.room {
+					if nextRoomInQueue.Name == pf.CurrentInQueue.room {
 						if len(pf.ParrentTrack()) <= 1 {
 							utils.DebugPrint("optimal room:", pf.OptimalRoom)
 							utils.DebugPrint("queue:")
@@ -110,13 +114,16 @@ func (pf *PathFinder) FindPaths() map[string][][]string {
 					}
 
 					pf.Queue = append([]queued{{
-						room:   nextRoomInQueue.name,
+						room:   nextRoomInQueue.Name,
 						parent: pf.CurrentParrent(),
 					}}, pf.Queue...)
-
-					pf.CurrentTunnel()[0] = pf.CurrentPath()[:nextRoomInQueue.index+1]
-					utils.DebugPrintf("paths[current.parent][0]: %v\n", pf.CurrentPath())
-					pf.Track[pf.CurrentParrent()] = pf.ParrentTrack()[:len(pf.ParrentTrack())-1]
+					utils.DebugPrintf("dead end paths[current.parent][0]: %v\n", pf.CurrentPath())
+					pf.CurrentTunnel()[0].Route = pf.CurrentPath().Route[:nextRoomInQueue.Index+1]
+					if len(pf.CurrentPath().Track) > 0 {
+						pf.CurrentPath().Track = pf.ParrentTrack()[:len(pf.ParrentTrack())-1]
+					}
+					utils.DebugPrintf("dead end paths[current.parent][0]: %v\n", pf.CurrentPath())
+					// pf.Track[pf.CurrentParrent()] = pf.ParrentTrack()[:len(pf.ParrentTrack())-1]
 				}
 			}
 			if len(pf.CurrentTunnel()) > 0 {
@@ -127,7 +134,6 @@ func (pf *PathFinder) FindPaths() map[string][][]string {
 			}
 			continue
 		}
-		pf.Visited[pf.CurrentInQueue.room].duplication--
 
 		utils.DebugPrint("[", foundAway, "]", "after iterating over links:")
 		utils.DebugPrintf("paths: %v\n", pf.Tunnels)
@@ -135,8 +141,8 @@ func (pf *PathFinder) FindPaths() map[string][][]string {
 		if len(pf.CurrentTunnel()) > 0 && pf.CurrentInQueue.room != pf.CurrentParrent() {
 			if !foundAway {
 				utils.DebugPrint("remove from visited beause it didn't split:", pf.LastRoom())
-				for _, r := range pf.CurrentPath() {
-					if pf.Visited[r].duplication == 1 {
+				for _, r := range pf.CurrentPath().Route {
+					if pf.Visited[r].duplication <= 1 {
 						utils.DebugPrint("remove visited room", r)
 						delete(pf.Visited, r)
 					} else {
